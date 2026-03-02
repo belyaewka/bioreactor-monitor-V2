@@ -19,11 +19,6 @@ logging.basicConfig(filename='monitor.log',
 logger = logging.getLogger('main')
 
 
-def change_state(device_list):
-    for device in device_list:
-        device.pin.value = not device.pin.value
-
-
 def main():
     logger.info('Main program started')
 

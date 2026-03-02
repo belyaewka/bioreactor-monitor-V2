@@ -8,7 +8,7 @@ from time import sleep
 logger = logging.getLogger(__name__)
 
 
-def message_to_telegram(message: str | None, api_timeout: int = API_TIMEOUT) -> None:
+def message_to_telegram(message: str, api_timeout: int = API_TIMEOUT) -> None:
     """send message via telegram API.
        Bot  send to telegram chat"""
 
