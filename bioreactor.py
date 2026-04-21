@@ -47,7 +47,7 @@ class Bioreactor:
 def create_bioreactor_list(device_list: tuple[dict[str, int],...]) -> tuple:
     """takes bioreactor tuple from config and return tuple with objects of Bioreactor class  """
 
-    result = (Bioreactor(name=name, pin=Button(pin, pull_up = True, bounce_time = 3.0)) for device
+    result = (Bioreactor(name=name, pin=Button(pin, pull_up = True, bounce_time = BOUNCE_TIME)) for device
               in device_list for name, pin in device.items())
 
     logger.info('Bioreactor list was successfully created')
