@@ -1,9 +1,8 @@
-from queue import Queue
+import asyncio
 from bioreactor import create_bioreactor_list
 from notifications import notification_worker
-import threading
-from time import sleep
 import logging
+from collections.abc import AsyncIterator
 
 from config import BIOREACTOR_TUPLE, MAIN_LOOP_DELAY
 
@@ -16,34 +15,29 @@ logging.basicConfig(filename='monitor.log',
                     )
 
 # logger init
-logger = logging.getLogger('main')
+logger = logging.getLogger(__name__)
+
+ # init bioreactors list
+bioreactors = create_bioreactor_list(BIOREACTOR_TUPLE)
+
+async def async_bioreactor_generator(bioreactor_list: list) -> AsyncIterator:
+    for item in bioreactor_list:
+        yield item
 
 
-def main():
-    logger.info('Main program started')
-
-    # init bioreactors list
-    bioreactors = create_bioreactor_list(BIOREACTOR_TUPLE)
-
-    # queue init
-    message_queue = Queue()
-
-    # separate thread for notification worker
-    worker_thread = threading.Thread(target=notification_worker,
-                                     args=(message_queue,),
-                                     daemon=True)
-    worker_thread.start()
-
-    # main loop =======================================
+async def bioreactor_checker(queue: asyncio.Queue):
+    logger.debug("Bioreactor checker started")
     while True:
         try:
-            for bioreactor in bioreactors:
+            async for bioreactor in async_bioreactor_generator(bioreactors):
                 # check alarms of each device
-                if msg := bioreactor.alarm_processor():
-                    message_queue.put(msg)
+                print(bioreactor)
+                if msg := await bioreactor.alarm_processor():
+                    print(msg)
+                    await queue.put(msg)
 
-            sleep(MAIN_LOOP_DELAY)
-
+            await asyncio.sleep(MAIN_LOOP_DELAY)
+            
         except KeyboardInterrupt:
             logger.info('Keyboard Interrupt, main program end')
             exit()
@@ -51,8 +45,21 @@ def main():
         except Exception as e:
             logger.error(f'Unknown error during main loop {e}')
             continue
-    # end of main loop ===============================
 
+
+async def main():
+    logger.info('Main program started')
+
+     # queue init
+    message_queue = asyncio.Queue()
+    print(message_queue)
+
+    await asyncio.gather(
+        bioreactor_checker(queue=message_queue),
+        notification_worker(queue=message_queue)
+    )
+
+   
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

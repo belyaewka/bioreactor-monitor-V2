@@ -1,43 +1,58 @@
 """Simple notification service for bioreactor class"""
 import logging
-import requests
-from config import API_TIMEOUT, URL_TO_SEND, DELAY_TO_SEND
-from queue import Queue
-from time import sleep
+import aiohttp
+from config import URL_TO_SEND, DELAY_TO_SEND, TELEGRAM_API_TIMEOUT, URL_FOR_GOTIFY, GF_APP_TOKEN
+import asyncio
+from gotify import AsyncGotify
 
 logger = logging.getLogger(__name__)
 
+async def message_to_gotify(message: str,):
+    async with AsyncGotify(
+        base_url = URL_FOR_GOTIFY,
+        app_token=GF_APP_TOKEN,
+    ) as gotify:
+        await gotify.create_message(
+            message,
+            title="Bioreactors Alerts",
+            priority=10,
+        )
 
-def message_to_telegram(message: str, api_timeout: int = API_TIMEOUT) -> None:
+
+async def message_to_telegram(message: str, api_timeout: int = TELEGRAM_API_TIMEOUT) -> None:
     """send message via telegram API.
        Bot  send to telegram chat"""
-
+    
+    url = URL_TO_SEND + message
+    logger.debug("Function message to telegram started")
     try:
-        url = URL_TO_SEND + message
-        r = requests.post(url, timeout=api_timeout)
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=api_timeout)) as session:       
+            async with session.post(url) as response:               
+                if response.status_code == 200:
+                    logger.info(f'Message was successfully sent. Response = {response.status_code}')
+                else:
+                    logger.warning(f'Response code (is not 200) = {response.status_code}')
+ 
 
-        if r.status_code == 200:
-            logger.info(f'Message was successfully sent. Response = {r.status_code}')
-        else:
-            logger.warning(f'Response code (is not 200) = {r.status_code}')
-
-    except requests.exceptions.Timeout:
-        logger.error("Telegram API request timeout")
-    except requests.exceptions.ConnectionError:
-        logger.error("Network error while sending to Telegram")
     except Exception as e:
-        logger.error(f"Unable to send notification. Unexpected error during sending message: {e}")
+        logger.error(f"An error occured while sending to Telegram, error = {e.__class__.__name__}")
+        
+    finally:
+        await session.close()
 
 
-def notification_worker(queue: Queue) -> None:
+async def notification_worker(queue: asyncio.Queue) -> None:
     """Simple worker to send messages with delay"""
-    while True:
-        sleep(DELAY_TO_SEND)  # delay between two messages to Telegram API
+    logger.debug("Notifcation worker started")
+    while True:        
         try:
-            next_message = queue.get()
+            next_message = await queue.get()
             if next_message:
                 logger.info('Notification worker received new message from FIFO queue and sent it for sending')
-                message_to_telegram(next_message)
+                print(next_message)
+                await message_to_telegram(next_message)
+                await message_to_gotify(next_message)
+                await asyncio.sleep(DELAY_TO_SEND)
         except KeyboardInterrupt:
             break
         except:
@@ -45,4 +60,5 @@ def notification_worker(queue: Queue) -> None:
 
 
 if __name__ == '__main__':
-    pass
+    asyncio.run(message_to_gotify("Test message"))
+    
