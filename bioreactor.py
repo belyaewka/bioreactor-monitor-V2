@@ -84,20 +84,18 @@ class ApiTypeBioreactor(BaseBioreactor):
     
 
     async def get_api_data(self) -> dict:
-        result_dict = {}
-
+        result_dict = {}        
+                     
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=DUONING_API_TIMEOUT)) as session:
                 async with session.get(url = self.uri) as api_response:               
-                    if api_response.status_code == 200:
-                        result_dict = await json.loads(api_response.text) 
+                    if api_response.status == 200:
+                        logger.info(f"Succesfuly received data from API, status code = {api_response.status}")
+                        result_dict = await api_response.json() 
                         
         except Exception as e:
                 logger.error(f"An error occured during request to API, error = {e.__class__.__name__}")
         
-        finally:
-            await session.close()
-
         return result_dict 
     
     
@@ -158,19 +156,15 @@ def create_bioreactor_list(device_list: tuple[dict[str, int],...]) -> list:
 
 
 if __name__ == '__main__':
-    # test create list
-    bioreactors = create_bioreactor_list(BIOREACTOR_TUPLE)
-    print(bioreactors)
-    
-    for i in bioreactors:
-        print(i)
-    
-    while True:
-        print(bioreactors[0].alarm_processor())
-        print(bioreactors[1].alarm_processor())
-        time.sleep(2)
+    async def test():
+            
+        # test create list
+        bioreactors = create_bioreactor_list(BIOREACTOR_TUPLE)
+        print(bioreactors)
 
-        
+        res = await bioreactors[-1].alarm_processor()
+        print(res)
 
+    asyncio.run(test())
 
  

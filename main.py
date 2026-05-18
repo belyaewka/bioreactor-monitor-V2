@@ -31,7 +31,6 @@ async def bioreactor_checker(queue: asyncio.Queue):
         try:
             async for bioreactor in async_bioreactor_generator(bioreactors):
                 # check alarms of each device
-                print(bioreactor)
                 if msg := await bioreactor.alarm_processor():
                     print(msg)
                     await queue.put(msg)
@@ -50,7 +49,7 @@ async def bioreactor_checker(queue: asyncio.Queue):
 async def main():
     logger.info('Main program started')
 
-     # queue init
+    # queue init
     message_queue = asyncio.Queue()
     print(message_queue)
 
