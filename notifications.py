@@ -74,3 +74,4 @@ async def test(msg: str):
                                
 if __name__ == '__main__':
     asyncio.run(message_to_gotify('Alarm test'))
+    

@@ -51,6 +51,8 @@ class RelayBioreactor(BaseBioreactor):
         # any of two conditions (steps) isn't True
         processed_message = None
 
+        logger.info(f"{time.strftime("%d-%m-%Y %H:%M:%S")} Bioreactor {self.name}, pin state = {self.pin.value}, alarm_flag = {self.alarm_flag}")
+
         # 1 first step - alarm activation: check pin and set alarm flag to True
         if self.pin.value == 1 and not self.alarm_flag: # button is pressed 
             self.alarm_flag = True
@@ -119,7 +121,7 @@ class ApiTypeBioreactor(BaseBioreactor):
         # 1 first step - alarm activation: check <com_al> and set alarm flag to True
         if comal_state == 1 and not self.alarm_flag: # alarm activated 
             self.alarm_flag = True
-            processed_message = self.alarm_on_msg + f"Active alarms: {active_alarms}" + self.event_reg_time()
+            processed_message = self.alarm_on_msg + f"\nActive alarms: {active_alarms}. " + self.event_reg_time()
             logger.error(self.alarm_on_msg + f"Active alarms: {active_alarms}")
 
         # 2 second step - alarm deactivation: check <com_al> and set alarm flag to False
