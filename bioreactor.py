@@ -144,7 +144,7 @@ def create_bioreactor_list(device_list: tuple[dict[str, int],...]) -> list:
         match device['type']:
 
             case 'dry_contact':
-                alarm_pin = Button(device['pin'], pull_up = True, bounce_time = BOUNCE_TIME)
+                alarm_pin = Button(device['pin'], bounce_time = BOUNCE_TIME)
                 bioreac_obj = RelayBioreactor(name=device['name'], pin=alarm_pin)
             
             case 'opc_ua-api':
